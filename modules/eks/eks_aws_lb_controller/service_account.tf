@@ -1,0 +1,1 @@
+# Service account resources moved to main.tf for better organization
