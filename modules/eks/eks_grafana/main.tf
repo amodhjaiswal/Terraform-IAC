@@ -228,7 +228,7 @@ resource "aws_iam_role" "loki_role" {
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringEquals = {
-            "${replace(var.oidc_provider_url, "https://", "")}:sub" = "system:serviceaccount:${var.namespace}:loki-sa"
+            "${replace(var.oidc_provider_url, "https://", "")}:sub" = "system:serviceaccount:monitoring:loki-sa"
             "${replace(var.oidc_provider_url, "https://", "")}:aud" = "sts.amazonaws.com"
           }
         }
@@ -256,7 +256,7 @@ resource "kubernetes_service_account" "loki" {
   
   metadata {
     name      = "loki-sa"
-    namespace = var.namespace
+    namespace = "monitoring"
     annotations = {
       "eks.amazonaws.com/role-arn" = aws_iam_role.loki_role[0].arn
     }
@@ -391,6 +391,10 @@ resource "helm_release" "loki" {
   create_namespace = false
   force_update     = true
   replace          = true
+  atomic           = true
+  cleanup_on_fail  = true
+  wait             = true
+  wait_for_jobs    = true
   
   values = [
     yamlencode({
@@ -422,6 +426,19 @@ resource "helm_release" "loki" {
             insecure = false
           }
         }
+        storage_config = {
+          aws = {
+            region = var.region
+            bucketnames = aws_s3_bucket.loki_logs[0].bucket
+            s3forcepathstyle = false
+            insecure = false
+          }
+          tsdb_shipper = {
+            active_index_directory = "/var/loki/tsdb-index"
+            cache_location = "/var/loki/tsdb-cache"
+            cache_ttl = "24h"
+          }
+        }
         schemaConfig = {
           configs = [
             {
@@ -435,14 +452,6 @@ resource "helm_release" "loki" {
               }
             }
           ]
-        }
-        storage_config = {
-          aws = {
-            region = var.region
-            bucketnames = aws_s3_bucket.loki_logs[0].bucket
-            s3forcepathstyle = false
-            insecure = false
-          }
         }
         ingester = {
           chunk_encoding = "snappy"
@@ -471,12 +480,17 @@ resource "helm_release" "loki" {
           max_cache_freshness_per_query = "10m"
           split_queries_by_interval = "15m"
           query_timeout = "300s"
+          ingestion_rate_mb = 50
+          ingestion_burst_size_mb = 100
         }
         querier = {
           max_concurrent = 10
         }
         query_range = {
           align_queries_with_step = true
+        }
+        compactor = {
+          working_directory = "/var/loki/compactor"
         }
         pattern_ingester = {
           enabled = true
@@ -485,10 +499,41 @@ resource "helm_release" "loki" {
           enabled = true
         }
       }
-      # Enable memberlist service
-      memberlist = {
-        service = {
-          publishNotReadyAddresses = true
+      
+      # Chunks Cache (Memcached) Configuration
+      chunksCache = {
+        enabled = true
+        replicas = 2
+        resources = {
+          limits = {
+            cpu = "250m"
+            memory = "1Gi"
+          }
+          requests = {
+            cpu = "250m"
+            memory = "1Gi"
+          }
+        }
+        args = [
+          "-m", "1024",
+          "--extended=modern,track_sizes",
+          "-I", "5m",
+          "-c", "16384",
+          "-v",
+          "-u", "11211"
+        ]
+        exporter = {
+          enabled = true
+          resources = {
+            limits = {
+              cpu = "100m"
+              memory = "128Mi"
+            }
+            requests = {
+              cpu = "50m"
+              memory = "64Mi"
+            }
+          }
         }
       }
       
@@ -512,6 +557,10 @@ resource "helm_release" "loki" {
           {
             name = "AWS_REGION"
             value = var.region
+          },
+          {
+            name = "AWS_S3_FORCE_PATH_STYLE"
+            value = "false"
           }
         ]
         resources = {

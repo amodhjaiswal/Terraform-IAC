@@ -1,6 +1,6 @@
 ###########----------GLOBAL VARIABLE---------###########
 env_name      = "preprod"
-project_name  =  "working"
+project_name  =  "pp"
 region        = "us-east-1"
 aws_account_id = "581580844553"
 cluster_name = "testing-preprod-eks"
