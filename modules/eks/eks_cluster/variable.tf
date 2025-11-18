@@ -94,13 +94,21 @@ variable "bastion_sg_id" {
   type        = string
 }
 
-
 variable "tags" {
   type        = map(string)
   default     = {}
 }
 
-
-
-
+variable "region" {
+  description = "aws region where resouces are being deployed"
+  type        = string
+}
+variable "secret_arn" {
+  description = "secret_arn"
+  type        = string
+}
+variable "bucket_name" {
+  description = "bucket_name"
+  type        = string
+}
 

@@ -51,25 +51,25 @@ module "ec2-bastion" {
 
 # }
 
-# ###########----------Media-S3-WITH-CF---------###########
-# module "media-s3-cf" {
-#   source               = "./modules/media_s3_cf"
-#   env_name             = terraform.workspace
-#   project_name         = var.project_name
-#   tags                 = var.tags
-#   media_bucket_name    = var.media_bucket_name
+###########----------Media-S3-WITH-CF---------###########
+module "media-s3-cf" {
+  source               = "./modules/media_s3_cf"
+  env_name             = terraform.workspace
+  project_name         = var.project_name
+  tags                 = var.tags
+  media_bucket_name    = var.media_bucket_name
 
-# }
+}
 
-# ###########----------SECRET-MANAGER---------###########
+###########----------SECRET-MANAGER---------###########
 
-# module "secret-manager" {
-#   source        = "./modules/secret_manager"
-#   env_name      = terraform.workspace
-#   project_name  = var.project_name
-#   tags          = var.tags
+module "secret-manager" {
+  source        = "./modules/secret_manager"
+  env_name      = terraform.workspace
+  project_name  = var.project_name
+  tags          = var.tags
 
-# }
+}
 
 
 ###########----------ECR---------###########
@@ -99,6 +99,9 @@ module "eks" {
   codebuild_role_arn      = module.codepipeline-global.codebuild_role_arn
   bastion_ssm_role_arn    = module.ec2-bastion.bastion_ssm_role_arn
   bastion_sg_id           = module.ec2-bastion.bastion_sg_id
+  region                  = var.region
+  secret_arn              = module.secret-manager.secret_arn
+  bucket_name             = module.media-s3-cf.bucket_name
 
 }
 

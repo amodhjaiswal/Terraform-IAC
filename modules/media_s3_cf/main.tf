@@ -37,6 +37,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "bucket_encryption
   }
 }
 
+# CORS configuration for the S3 bucket
+resource "aws_s3_bucket_cors_configuration" "bucket_cors" {
+  bucket = aws_s3_bucket.bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["POST", "GET", "HEAD", "DELETE", "PUT"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag", "x-amz-server-side-encryption", "x-amz-request-id", "x-amz-meta-custom-header", "x-amz-id-2"]
+    max_age_seconds = 3000
+  }
+}
+
 # Adding lifecycle rule to empty bucket on destruction
 resource "aws_s3_bucket_lifecycle_configuration" "bucket_lifecycle" {
   bucket = aws_s3_bucket.bucket.id
