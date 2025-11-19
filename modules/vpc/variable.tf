@@ -8,6 +8,11 @@ variable "project_name" {
   type        = string
 }
 
+variable "region" {
+  description = "aws region where resouces are being deployed"
+  type        = string
+}
+
 
 ###########----------VPC VARIABLE---------###########
 variable "vpc_name" {

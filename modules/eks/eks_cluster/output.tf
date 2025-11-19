@@ -39,3 +39,7 @@ output "cluster_certificate_authority_data" {
   value = aws_eks_cluster.this.certificate_authority[0].data
 }
 
+output "pod_identity_role_arn" {
+  value = var.create_oidc_provider && length(aws_iam_role.pod_identity_role) > 0 ? aws_iam_role.pod_identity_role[0].arn : null
+}
+

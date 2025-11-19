@@ -1,5 +1,5 @@
 # VPC 
-resource "aws_vpc" "this" {
+resource "aws_vpc" "main_vpc" {
   cidr_block           = var.cidr_block
   enable_dns_support   = true
   enable_dns_hostnames = true
@@ -12,7 +12,7 @@ resource "aws_vpc" "this" {
 # Public subnets
 resource "aws_subnet" "public" {
   count                   = length(var.public_subnet_cidrs)
-  vpc_id                  = aws_vpc.this.id
+  vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = var.public_subnet_cidrs[count.index]
   availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = true
@@ -25,7 +25,7 @@ resource "aws_subnet" "public" {
 # Private subnets
 resource "aws_subnet" "private" {
   count             = length(var.private_subnet_cidrs)
-  vpc_id            = aws_vpc.this.id
+  vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = var.private_subnet_cidrs[count.index]
   availability_zone = var.availability_zones[count.index]
   tags = merge(
@@ -36,7 +36,7 @@ resource "aws_subnet" "private" {
 
 # Internet Gateway
 resource "aws_internet_gateway" "this" {
-  vpc_id = aws_vpc.this.id
+  vpc_id = aws_vpc.main_vpc.id
   tags   = merge(local.common_tags, { Name = "${var.project_name}-${var.env_name}-igw" })
 }
 
@@ -45,7 +45,6 @@ resource "aws_eip" "nat" {
   domain = "vpc"
   tags   = merge(local.common_tags, { Name = "${var.project_name}-${var.env_name}-nat-eip" })
 }
-
 
 # NAT Gateway
 resource "aws_nat_gateway" "this" {
@@ -56,7 +55,7 @@ resource "aws_nat_gateway" "this" {
 
 # Public Route Table
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.this.id
+  vpc_id = aws_vpc.main_vpc.id
   tags   = merge(local.common_tags, { Name = "${var.project_name}-${var.env_name}-public-rt" })
 }
 
@@ -74,7 +73,7 @@ resource "aws_route_table_association" "public" {
 
 # Private Route Table
 resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.this.id
+  vpc_id = aws_vpc.main_vpc.id
   tags   = merge(local.common_tags, { Name = "${var.project_name}-${var.env_name}-private-rt" })
 }
 

@@ -8,6 +8,7 @@ variable "env_name" {
   description = "Environment name (dev/qa/prod) for naming"
 }
 
+
 variable "vpc_id" {
   type        = string
   description = "VPC ID where EKS will be deployed"
@@ -112,3 +113,8 @@ variable "bucket_name" {
   type        = string
 }
 
+variable "create_manifests" {
+  description = "Whether to create Kubernetes manifests"
+  type        = bool
+  default     = true
+}

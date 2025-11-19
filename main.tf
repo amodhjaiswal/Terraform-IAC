@@ -9,7 +9,16 @@ module "vpc" {
   public_subnet_cidrs   = var.public_subnet_cidrs
   private_subnet_cidrs  = var.private_subnet_cidrs
   availability_zones    = var.availability_zones
+  region                = var.region
+}
+
+###########----------VPC-CLEANUP---------###########
+module "vpc_cleanup" {
+  source   = "./modules/vpc-cleanup"
+  region   = var.region
+  vpc_cidr = var.cidr_block
   
+  depends_on = [module.vpc]
 }
 
 ###########----------EC2-BASTION---------###########
@@ -102,7 +111,30 @@ module "eks" {
   region                  = var.region
   secret_arn              = module.secret-manager.secret_arn
   bucket_name             = module.media-s3-cf.bucket_name
+  
 
+}
+
+###########----------EKS-SERVICE-ACCOUNT---------###########
+
+module "eks_serviceaccount" {
+  source = "./modules/eks/eks_serviceaccount"
+  count  = var.create_manifests ? 1 : 0
+
+  cluster_name         = module.eks.cluster_name
+  region              = var.region
+  namespace           = terraform.workspace
+  service_account_name = "${var.project_name}-${terraform.workspace}-service-account"
+  role_arn            = module.eks.pod_identity_role_arn
+  project_name        = var.project_name
+  environment         = terraform.workspace
+
+  providers = {
+    kubernetes = kubernetes
+    aws        = aws
+  }
+
+  depends_on = [module.eks]
 }
 
 ###########----------EKS-AWS-INGRESS-CONTROLLER---------###########
