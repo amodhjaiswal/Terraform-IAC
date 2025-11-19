@@ -19,5 +19,8 @@ resource "kubernetes_service_account_v1" "aws_lb_controller" {
     }
   }
   
-  depends_on = [time_sleep.wait_for_cluster]
+  depends_on = [
+    time_sleep.wait_for_cluster,
+    var.node_group_status
+  ]
 }

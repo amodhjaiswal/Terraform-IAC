@@ -39,40 +39,40 @@ resource "aws_security_group" "eks_controlplane" {
 }
 
 #######################################
-# EKS Cluster
+# EKS Cluster (OLD - COMMENTED OUT)
 #######################################
-resource "aws_eks_cluster" "this" {
-  name     = "${local.name_prefix}-eks"
-  role_arn = aws_iam_role.eks_cluster_role.arn
-  version  = var.cluster_version
+# resource "aws_eks_cluster" "this" {
+#   name     = "${local.name_prefix}-eks"
+#   role_arn = aws_iam_role.eks_cluster_role.arn
+#   version  = var.cluster_version
 
-  vpc_config {
-    subnet_ids              = var.private_subnet_ids
-    security_group_ids      = [aws_security_group.eks_controlplane.id]
-    endpoint_private_access = true
-    endpoint_public_access  = true
-    public_access_cidrs     = ["0.0.0.0/0"] # Restrict to specific IPs if needed
-  }
+#   vpc_config {
+#     subnet_ids              = var.private_subnet_ids
+#     security_group_ids      = [aws_security_group.eks_controlplane.id]
+#     endpoint_private_access = true
+#     endpoint_public_access  = true
+#     public_access_cidrs     = ["0.0.0.0/0"] # Restrict to specific IPs if needed
+#   }
 
-  access_config {
-    authentication_mode = "API_AND_CONFIG_MAP"
-  }
+#   access_config {
+#     authentication_mode = "API_AND_CONFIG_MAP"
+#   }
 
-  enabled_cluster_log_types = ["api", "audit", "authenticator"]
+#   enabled_cluster_log_types = ["api", "audit", "authenticator"]
 
-  tags = local.common_tags
+#   tags = local.common_tags
 
-  depends_on = [
-    aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy,
-    aws_iam_role_policy_attachment.cluster_AmazonEKSVPCResourceController,
-  ]
-}
+#   depends_on = [
+#     aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy,
+#     aws_iam_role_policy_attachment.cluster_AmazonEKSVPCResourceController,
+#   ]
+# }
 
 #######################################
 # EKS Addons (Latest Recommended Versions)
 #######################################
 resource "aws_eks_addon" "vpc_cni" {
-  cluster_name                = aws_eks_cluster.this.name
+  cluster_name                = aws_eks_cluster.this_secure.name
   addon_name                  = "vpc-cni"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
@@ -85,7 +85,7 @@ resource "aws_eks_addon" "vpc_cni" {
 }
 
 resource "aws_eks_addon" "coredns" {
-  cluster_name                = aws_eks_cluster.this.name
+  cluster_name                = aws_eks_cluster.this_secure.name
   addon_name                  = "coredns"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
@@ -98,7 +98,7 @@ resource "aws_eks_addon" "coredns" {
 }
 
 resource "aws_eks_addon" "kube_proxy" {
-  cluster_name                = aws_eks_cluster.this.name
+  cluster_name                = aws_eks_cluster.this_secure.name
   addon_name                  = "kube-proxy"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
@@ -111,7 +111,7 @@ resource "aws_eks_addon" "kube_proxy" {
 }
 
 resource "aws_eks_addon" "pod_identity_agent" {
-  cluster_name                = aws_eks_cluster.this.name
+  cluster_name                = aws_eks_cluster.this_secure.name
   addon_name                  = "eks-pod-identity-agent"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
@@ -150,7 +150,7 @@ resource "aws_launch_template" "node_lt" {
 # EKS Managed Node Group
 #######################################
 resource "aws_eks_node_group" "managed_nodes" {
-  cluster_name    = aws_eks_cluster.this.name
+  cluster_name    = aws_eks_cluster.this_secure.name
   node_group_name = "${local.name_prefix}-managed-ng"
   node_role_arn   = aws_iam_role.node_group_role.arn
   subnet_ids      = var.private_subnet_ids
@@ -176,7 +176,7 @@ resource "aws_eks_node_group" "managed_nodes" {
   })
 
   depends_on = [
-    aws_eks_cluster.this,
+    aws_eks_cluster.this_secure,
     aws_launch_template.node_lt,
   ]
 }
@@ -188,24 +188,24 @@ resource "aws_iam_openid_connect_provider" "oidc" {
   count           = var.create_oidc_provider ? 1 : 0
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [var.oidc_thumbprint]
-  url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
+  url             = aws_eks_cluster.this_secure.identity[0].oidc[0].issuer
 
-  depends_on = [aws_eks_cluster.this]
+  depends_on = [aws_eks_cluster.this_secure]
 }
 
 #######################################
 # EKS Access Entries for CodeBuild Role
 #######################################
 resource "aws_eks_access_entry" "codebuild_access" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = var.codebuild_role_arn
   type          = "STANDARD"
 
-  depends_on = [aws_eks_cluster.this]
+  depends_on = [aws_eks_cluster.this_secure]
 }
 
 resource "aws_eks_access_policy_association" "codebuild_admin" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = var.codebuild_role_arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
@@ -217,7 +217,7 @@ resource "aws_eks_access_policy_association" "codebuild_admin" {
 }
 
 resource "aws_eks_access_policy_association" "codebuild_admin_view" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = var.codebuild_role_arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminViewPolicy"
 
@@ -232,15 +232,15 @@ resource "aws_eks_access_policy_association" "codebuild_admin_view" {
 # EKS Access Entries for Bastion SSM Role
 #######################################
 resource "aws_eks_access_entry" "bastion_access" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = var.bastion_ssm_role_arn
   type          = "STANDARD"
 
-  depends_on = [aws_eks_cluster.this]
+  depends_on = [aws_eks_cluster.this_secure]
 }
 
 resource "aws_eks_access_policy_association" "bastion_admin" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = var.bastion_ssm_role_arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
@@ -252,7 +252,7 @@ resource "aws_eks_access_policy_association" "bastion_admin" {
 }
 
 resource "aws_eks_access_policy_association" "bastion_admin_view" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = var.bastion_ssm_role_arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminViewPolicy"
 

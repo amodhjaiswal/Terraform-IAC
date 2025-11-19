@@ -1,9 +1,14 @@
+output "node_group_status" {
+  description = "Status of the EKS node group"
+  value       = aws_eks_node_group.managed_nodes.status
+}
+
 output "cluster_name" {
-  value = aws_eks_cluster.this.name
+  value = aws_eks_cluster.this_secure.name
 }
 
 output "cluster_endpoint" {
-  value = aws_eks_cluster.this.endpoint
+  value = aws_eks_cluster.this_secure.endpoint
 }
 
 output "cluster_security_group_id" {
@@ -27,16 +32,16 @@ output "oidc_provider_arn" {
 }
 
 output "oidc_url" {
-  value = aws_eks_cluster.this.identity[0].oidc[0].issuer
+  value = aws_eks_cluster.this_secure.identity[0].oidc[0].issuer
 }
 
 output "cluster_certificate_authority" {
-  value = aws_eks_cluster.this.certificate_authority[0].data
+  value = aws_eks_cluster.this_secure.certificate_authority[0].data
 }
 
 
 output "cluster_certificate_authority_data" {
-  value = aws_eks_cluster.this.certificate_authority[0].data
+  value = aws_eks_cluster.this_secure.certificate_authority[0].data
 }
 
 output "pod_identity_role_arn" {

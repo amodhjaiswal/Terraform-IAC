@@ -73,13 +73,13 @@ resource "aws_iam_instance_profile" "node_instance_profile" {
 }
 # Give Terraform user access to EKS cluster
 resource "aws_eks_access_entry" "terraform_user_access" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = "arn:aws:iam::581580844553:user/amodh-poc"
   type          = "STANDARD"
 }
 
 resource "aws_eks_access_policy_association" "terraform_user_admin" {
-  cluster_name  = aws_eks_cluster.this.name
+  cluster_name  = aws_eks_cluster.this_secure.name
   principal_arn = "arn:aws:iam::581580844553:user/amodh-poc"
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 

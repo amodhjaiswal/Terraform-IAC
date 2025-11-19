@@ -29,6 +29,7 @@ module "ec2-bastion" {
   region              = var.region
   tags                = var.tags
   vpc_id              = module.vpc.vpc_id
+  vpc_cidr            = var.cidr_block
   public_subnet       = module.vpc.public_subnet_ids[0]
   ami_id              = var.ami_id
   instance_type       = var.instance_type
@@ -149,6 +150,7 @@ module "eks_aws_lb_controller" {
   region            = var.region
   oidc_provider_arn = module.eks.oidc_provider_arn
   oidc_url          = module.eks.oidc_url
+  node_group_status = module.eks.node_group_status
   tags              = var.tags
   depends_on = [
     module.eks

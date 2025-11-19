@@ -1,8 +1,8 @@
 # Data sources for OIDC provider
 data "aws_eks_cluster" "cluster" {
-  name = aws_eks_cluster.this.name
+  name = aws_eks_cluster.this_secure.name
   depends_on = [
-    aws_eks_cluster.this,
+    aws_eks_cluster.this_secure,
     aws_eks_node_group.managed_nodes
   ]
 }

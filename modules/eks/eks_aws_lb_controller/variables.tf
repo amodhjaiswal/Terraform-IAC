@@ -8,6 +8,12 @@ variable "create_manifests" {
   default     = true
 }
 
+variable "node_group_status" {
+  type        = string
+  description = "Node group status for dependency"
+  default     = ""
+}
+
 variable "project_name" {
   type        = string
   description = "Project Name"
